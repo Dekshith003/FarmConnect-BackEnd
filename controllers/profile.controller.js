@@ -18,6 +18,21 @@ module.exports = function ProfileController({ profileService }) {
       }
     },
 
+    updateProfile: async (req, res, next) => {
+      try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        const updated = await profileService.createOrUpdateProfile(
+          userId,
+          role,
+          req.body
+        );
+        res.status(200).json({ message: "Profile updated", profile: updated });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     getProfile: async (req, res, next) => {
       try {
         const profile = await profileService.getProfile(req.user.id);

@@ -3,11 +3,16 @@ const Crop = require("../models/Crop");
 
 module.exports = () => {
   const completeProfile = async (farmerId, profileData) => {
-    return await Farmer.findByIdAndUpdate(
-      farmerId,
-      { ...profileData, profileCompleted: true },
-      { new: true }
-    );
+    // Only update allowed fields
+    const update = {
+      ...profileData,
+      profileCompleted: true,
+    };
+    if (profileData.landSize !== undefined)
+      update.landSize = profileData.landSize;
+    if (profileData.cropsPlanted !== undefined)
+      update.cropsPlanted = profileData.cropsPlanted;
+    return await Farmer.findByIdAndUpdate(farmerId, update, { new: true });
   };
 
   const postCrop = async (farmerId, cropData) => {

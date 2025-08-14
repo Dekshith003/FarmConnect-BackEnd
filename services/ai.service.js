@@ -1,4 +1,3 @@
-// services/ai.service.js
 const axios = require("axios");
 
 class AiService {
@@ -7,6 +6,7 @@ class AiService {
   }
 
   async getAiCropRecommendations(farmerName, location, season, cropHistory) {
+    // ...existing code...
     const prompt = `You are an agriculture expert. Farmer ${farmerName} is in ${location} during ${season}. They previously grew: ${cropHistory.join(
       ", "
     )}. Suggest 3 profitable crops to plant next season and a short reason for each.`;
@@ -24,14 +24,17 @@ class AiService {
       );
       return resp.data.choices?.[0]?.message?.content || "";
     } catch (err) {
-      this.logger?.error("AI crop recommendation error", {
-        error: err.message,
-      });
+      if (this.logger) {
+        this.logger.error("AI crop recommendation error", {
+          error: err.message,
+        });
+      }
       throw new Error("AI crop recommendation error");
     }
   }
 
   async getMapRecommendations(payload) {
+    // ...existing code...
     try {
       const {
         location,
@@ -95,8 +98,64 @@ class AiService {
 
       return parsed || { text: content };
     } catch (err) {
-      this.logger?.error("AI map recommendation error", { error: err.message });
+      if (this.logger) {
+        this.logger.error("AI map recommendation error", {
+          error: err.message,
+        });
+      }
       throw new Error("AI map recommendation error");
+    }
+  }
+
+  async predict(input) {
+    // Use OpenAI for real AI prediction
+    const prompt = `Predict or analyze the following input for agriculture context: ${input}`;
+    try {
+      const resp = await axios.post(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 400,
+        },
+        {
+          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        }
+      );
+      return { result: resp.data.choices?.[0]?.message?.content || "" };
+    } catch (err) {
+      if (this.logger) {
+        this.logger.error("AI predict error", { error: err.message });
+      }
+      throw new Error("AI predict error");
+    }
+  }
+
+  async recommend(context) {
+    // Use OpenAI for real AI recommendation
+    const prompt = `Give agricultural recommendations for the following context: ${JSON.stringify(
+      context
+    )}`;
+    try {
+      const resp = await axios.post(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 400,
+        },
+        {
+          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        }
+      );
+      return {
+        recommendations: resp.data.choices?.[0]?.message?.content || "",
+      };
+    } catch (err) {
+      if (this.logger) {
+        this.logger.error("AI recommend error", { error: err.message });
+      }
+      throw new Error("AI recommend error");
     }
   }
 }

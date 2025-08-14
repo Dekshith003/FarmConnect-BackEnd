@@ -1,4 +1,3 @@
-// models/Profile.js
 const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema(
@@ -20,6 +19,7 @@ const profileSchema = new mongoose.Schema(
       lng: { type: Number },
     },
     bio: { type: String },
+    avatar: { type: String }, // <-- Added avatar field
   },
   { timestamps: true }
 );

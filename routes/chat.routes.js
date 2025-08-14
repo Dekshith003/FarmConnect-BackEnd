@@ -20,4 +20,7 @@ router.get("/", chatCtrl.listUserChats);
 // Get chat details by ID
 router.get("/:id", chatCtrl.getChatDetails);
 
+// Get chat messages (clean endpoint for receiving messages)
+router.get("/:id/messages", chatCtrl.getChatHistory);
+
 module.exports = router;

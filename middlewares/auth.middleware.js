@@ -8,13 +8,18 @@ const protect = (req, res, next) => {
     return res.status(401).json({ message: "No token provided" });
   }
   const token = header.split(" ")[1];
+  logger.info("Received token: %s", token);
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    logger.info("Decoded token: %j", decoded);
     req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch (err) {
     logger.warn("Invalid token attempt: %s", err.message);
-    return res.status(403).json({ message: "Invalid token" });
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    return res.status(403).json({ message: "Invalid token signature" });
   }
 };
 

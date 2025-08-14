@@ -1,27 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middlewares/auth.middleware");
-const { validateRequest } = require("../middlewares/validate.middleware");
-const AiService = require("../services/ai.service");
-const logger = require("../utils/logger");
-const AiController = require("../controllers/ai.controller");
+const { protect } = require("../middlewares/auth.middleware.js");
+const validateRequest = require("../middlewares/validate.middleware.js");
+const AiService = require("../services/ai.service.js");
+const logger = require("../utils/logger.js");
+const AiController = require("../controllers/ai.controller.js");
+
 const aiService = new AiService(logger);
 const aiController = new AiController(aiService);
 
-// Predict endpoint
-router.post(
-  "/predict",
-  protect,
-  validateRequest,
-  aiController.predict.bind(aiController)
-);
-
-// Recommend endpoint
-router.post(
-  "/recommend",
-  protect,
-  validateRequest,
-  aiController.recommend.bind(aiController)
-);
+router.post("/predict", protect, validateRequest, (req, res, next) => {
+  aiController.predict(req, res, next);
+});
+router.post("/recommend", protect, validateRequest, (req, res, next) => {
+  aiController.recommend(req, res, next);
+});
 
 module.exports = router;

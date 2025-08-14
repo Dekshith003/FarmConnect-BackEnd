@@ -1,4 +1,12 @@
 module.exports = ({ chatService }) => {
+  const getChatHistory = async (req, res, next) => {
+    try {
+      const messages = await chatService.getChatHistory(req.params.id);
+      res.json(messages);
+    } catch (err) {
+      next(err);
+    }
+  };
   const startChat = async (req, res, next) => {
     try {
       const otherUserId = req.body.userId;
@@ -41,5 +49,11 @@ module.exports = ({ chatService }) => {
     }
   };
 
-  return { startChat, sendMessage, listUserChats, getChatDetails };
+  return {
+    startChat,
+    sendMessage,
+    listUserChats,
+    getChatDetails,
+    getChatHistory,
+  };
 };

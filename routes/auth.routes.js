@@ -7,11 +7,19 @@ const { protect } = require("../middlewares/auth.middleware");
 const authService = require("../services/auth.service")();
 const ctrl = require("../controllers/auth.controller")({ authService });
 
+// Logout (client should just delete token, but endpoint for completeness)
+router.post("/logout", (req, res) => {
+  // For stateless JWT, logout is handled on client by deleting token.
+  // Optionally, you could implement token blacklisting here.
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
 // existing routes
 router.post(
   "/register",
   [
-    body("name").isString().trim().notEmpty(),
+    body("firstName").isString().trim().notEmpty(),
+    body("lastName").isString().trim().notEmpty(),
     body("email").isEmail(),
     body("password").isLength({ min: 6 }),
     body("role").isIn(["farmer", "customer"]),
@@ -31,6 +39,7 @@ router.post(
   ctrl.verifyRegistration
 );
 
+// POST /login (email/password, returns token)
 router.post(
   "/login",
   [
@@ -41,19 +50,7 @@ router.post(
   validateRequest,
   ctrl.login
 );
-
-router.post(
-  "/verify-login",
-  [
-    body("email").isEmail(),
-    body("otp").isLength({ min: 6, max: 6 }),
-    body("role").isIn(["farmer", "customer"]),
-  ],
-  validateRequest,
-  ctrl.verifyLogin
-);
-
-// NEW: forgot password (sends OTP) - public
+// NEW: forgot password - public
 router.post(
   "/forgot-password",
   [body("email").isEmail(), body("role").isIn(["farmer", "customer"])],

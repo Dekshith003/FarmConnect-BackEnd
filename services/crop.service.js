@@ -52,6 +52,24 @@ module.exports = () => {
     return crop;
   };
 
+  // Get top 5 trending crops by number of unsold listings
+  const getTrendingCrops = async () => {
+    const trending = await Crop.aggregate([
+      { $match: { isSold: false } },
+      {
+        $group: {
+          _id: "$name",
+          count: { $sum: 1 },
+          category: { $first: "$category" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      { $project: { name: "$_id", count: 1, category: 1, _id: 0 } },
+    ]);
+    return trending;
+  };
+
   return {
     createCrop,
     getMyCrops,
@@ -59,5 +77,6 @@ module.exports = () => {
     removeCrop,
     marketplaceSearch,
     getCropDetails,
+    getTrendingCrops,
   };
 };

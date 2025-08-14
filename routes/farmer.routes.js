@@ -13,7 +13,15 @@ router.use(protect, allowRoles(FARMER));
 
 router.put(
   "/complete-profile",
-  [body("phone").optional().isString(), body("farmName").optional().isString()],
+  [
+    body("phone").optional().isString(),
+    body("farmName").optional().isString(),
+    body("landSize").optional().isNumeric(),
+    body("cropsPlanted").optional().isArray(),
+    body("cropsPlanted.*.name").optional().isString(),
+    body("cropsPlanted.*.category").optional().isString(),
+    body("cropsPlanted.*.area").optional().isNumeric(),
+  ],
   validateRequest,
   ctrl.completeProfile
 );

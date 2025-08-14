@@ -17,21 +17,63 @@ module.exports = ({
     throw new Error("Invalid user role");
   };
 
-  // Registration, verification, login flows (unchanged)
+  // Registration, verification, login flows (updated for new fields)
   const register = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      address,
+      city,
+      state,
+      zip,
+      farmName,
+      farmSize,
+      farmType,
+      experience,
+      businessName,
+      businessType,
+      orderVolume,
+      role,
+    } = req.body;
     const UserModel = getUserModel(role);
     const existing = await UserModel.findOne({ email });
     if (existing) return res.status(400).json({ message: "Email exists" });
     const hashed = await hashPassword(password);
     const { code, expiresAt } = generateOTP();
-    const user = await UserModel.create({
-      name,
+    // Build user object based on role
+    let userObj = {
+      firstName,
+      lastName,
       email,
       password: hashed,
+      phone,
+      address,
+      city,
+      state,
+      zip,
       otp: { code, expiresAt },
       isVerified: false,
-    });
+    };
+    if (role === FARMER) {
+      userObj = {
+        ...userObj,
+        farmName,
+        farmSize,
+        farmType,
+        experience,
+      };
+    } else if (role === CUSTOMER) {
+      userObj = {
+        ...userObj,
+        businessName,
+        businessType,
+        orderVolume,
+      };
+    }
+    const user = await UserModel.create(userObj);
     await sendOTPEmail(email, code, "register");
     return res.status(201).json({ message: "OTP sent for verification", role });
   };
@@ -62,27 +104,8 @@ module.exports = ({
     if (!user) return res.status(404).json({ message: "User not found" });
     const match = await comparePasswords(password, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
-    const { code, expiresAt } = generateOTP();
-    user.otp = { code, expiresAt };
-    await user.save();
-    await sendOTPEmail(email, code, "login");
-    return res.status(200).json({ message: "OTP sent for login" });
-  };
-
-  const verifyLogin = async (req, res) => {
-    const { email, otp, role } = req.body;
-    const UserModel = getUserModel(role);
-    const user = await UserModel.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (
-      !user.otp ||
-      user.otp.code !== otp ||
-      new Date(user.otp.expiresAt) < new Date()
-    ) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-    user.otp = undefined;
-    await user.save();
+    if (!user.isVerified)
+      return res.status(403).json({ message: "User not verified" });
     const token = generateToken({ id: user._id, role });
     return res.status(200).json({ message: "Login successful", token });
   };
@@ -105,11 +128,9 @@ module.exports = ({
         email,
         role
       );
-      return res
-        .status(200)
-        .json({
-          message: "If an account with this email exists, an OTP has been sent",
-        });
+      return res.status(200).json({
+        message: "If an account with this email exists, an OTP has been sent",
+      });
     }
 
     // generate OTP and save
@@ -121,11 +142,9 @@ module.exports = ({
     await sendOTPEmail(email, code, "reset"); // purpose 'reset' handled in emailService text
     logger.info("Password reset OTP sent for %s (%s)", email, role);
 
-    return res
-      .status(200)
-      .json({
-        message: "If an account with this email exists, an OTP has been sent",
-      });
+    return res.status(200).json({
+      message: "If an account with this email exists, an OTP has been sent",
+    });
   };
 
   // === NEW: Reset Password with OTP ===
@@ -187,7 +206,6 @@ module.exports = ({
     register,
     verifyRegistration,
     login,
-    verifyLogin,
     forgotPassword,
     resetPassword,
     changePassword,

@@ -11,6 +11,12 @@ const pestSchema = new mongoose.Schema(
     detectedIssue: Object,
     confidence: Number,
     recommendations: Object,
+    pestName: String,
+    cropLocation: String,
+    cropName: String,
+    severity: String,
+    suggestions: [String],
+    detectedAt: Date,
   },
   { timestamps: true }
 );

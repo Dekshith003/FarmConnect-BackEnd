@@ -9,6 +9,7 @@ const farmerSchema = new mongoose.Schema(
     city: { type: String },
     state: { type: String },
     zip: { type: String },
+    role: { type: String, required: true },
     farmName: { type: String },
     farmSize: { type: String },
     farmType: { type: String },

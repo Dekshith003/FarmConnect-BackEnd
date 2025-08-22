@@ -15,18 +15,11 @@ module.exports = ({ aiService, marketPriceService }) => {
     const recentCrops = await Crop.find({ farmer: farmerId })
       .sort({ createdAt: -1 })
       .limit(5);
-    const aiRecommendations = await aiService.getAiCropRecommendations(
-      farmer?.name || "Farmer",
-      "Unknown region",
-      "current season",
-      recentCrops.map((c) => c.name)
-    );
     return {
       profile: farmer,
       totalCrops,
       soldCrops,
       recentCrops,
-      aiRecommendations,
     };
   };
 

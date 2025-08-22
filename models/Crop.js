@@ -9,10 +9,8 @@ const cropSchema = new mongoose.Schema(
     quantity: { type: Number, required: true },
     unit: { type: String, default: "kg" },
     price: { type: Number, required: true },
-    location: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number], required: true }, // [lng, lat]
-    },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
     images: [{ type: String }], // array of uploaded image paths/URLs
     farmer: {
       type: mongoose.Schema.Types.ObjectId,
@@ -24,7 +22,5 @@ const cropSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-cropSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Crop", cropSchema);

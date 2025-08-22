@@ -5,18 +5,11 @@ const Crop = require("../models/Crop");
 const Farmer = require("../models/Farmer");
 
 module.exports = ({ marketService, aiService }) => {
-  /**
-   * Find nearby crops within radius (meters). If none found, returns empty list.
-   * filters may include: lat, lng, radius, category, priceMin, priceMax, search
-   */
   const findNearbyCrops = async (filters = {}) => {
     // Example: filter by location (implement geo queries as needed)
     return await Crop.find(filters);
   };
 
-  /**
-   * Find nearby farms (unique farmer info) within radius
-   */
   const findNearbyFarms = async ({ lat, lng, radius = 50000 }) => {
     try {
       const maxDistance = Number(radius || 50000);
@@ -38,9 +31,6 @@ module.exports = ({ marketService, aiService }) => {
     }
   };
 
-  /**
-   * Aggregate counts of crop types in the nearby area
-   */
   const aggregateNearbyCropSummary = async (filters = {}) => {
     const crops = await findNearbyCrops(filters);
     const summary = {};

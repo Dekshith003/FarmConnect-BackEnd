@@ -12,7 +12,11 @@ module.exports = () => {
   };
 
   const getMyCrops = async (farmerId) => {
-    return await Crop.find({ farmer: farmerId });
+    console.log(farmerId, "Fetching crops for farmer ID");
+    return await Crop.find({ farmer: farmerId }).populate(
+      "farmer",
+      "firstName lastName email phone address"
+    );
   };
 
   const markCropSold = async (farmerId, cropId) => {
@@ -46,7 +50,9 @@ module.exports = () => {
   };
 
   const getCropDetails = async (cropId) => {
+    console.log(cropId, "Fetching crop details for ID");
     const crop = await Crop.findById(cropId);
+    console.log(crop, "Fetched crop details");
     if (!crop)
       throw Object.assign(new Error("Crop not found"), { statusCode: 404 });
     return crop;
@@ -70,6 +76,14 @@ module.exports = () => {
     return trending;
   };
 
+  const getAllCrops = async () => {
+    // Populate farmer details in the crop response
+    return await Crop.find().populate(
+      "farmer",
+      "firstName lastName email phone address"
+    );
+  };
+
   return {
     createCrop,
     getMyCrops,
@@ -78,5 +92,6 @@ module.exports = () => {
     marketplaceSearch,
     getCropDetails,
     getTrendingCrops,
+    getAllCrops,
   };
 };

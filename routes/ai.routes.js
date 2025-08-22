@@ -12,7 +12,8 @@ const aiController = new AiController(aiService);
 router.post("/predict", protect, validateRequest, (req, res, next) => {
   aiController.predict(req, res, next);
 });
-router.post("/recommend", protect, validateRequest, (req, res, next) => {
+
+router.post("/recommend/crops", protect, validateRequest, (req, res, next) => {
   aiController.recommend(req, res, next);
 });
 

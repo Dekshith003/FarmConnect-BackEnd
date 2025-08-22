@@ -17,4 +17,7 @@ router.post(
   pestController.detectPest
 );
 
+// Pest detection history for logged-in farmer
+router.get("/history", protect, allowRoles(FARMER), pestController.getHistory);
+
 module.exports = router;

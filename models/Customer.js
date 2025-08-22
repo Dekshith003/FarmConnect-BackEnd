@@ -9,6 +9,7 @@ const customerSchema = new mongoose.Schema(
     city: { type: String },
     state: { type: String },
     zip: { type: String },
+    role: { type: String, required: true },
     businessName: { type: String },
     businessType: { type: String },
     orderVolume: { type: String },

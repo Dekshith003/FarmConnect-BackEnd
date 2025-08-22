@@ -17,7 +17,7 @@ const sendOTPEmail = async (to, otp, purpose = "register") => {
   if (purpose === "register") {
     subject = "Verify your FarmConnect account";
     text = `Your OTP for registration is: ${otp}\nIt will expire in ${
-      process.env.OTP_EXPIRES_IN || 5
+      process.env.OTP_EXPIRES_IN || 10
     } minutes.\n- FarmConnect Team`;
   } else if (purpose === "login") {
     subject = "Login OTP - FarmConnect";
@@ -32,7 +32,7 @@ const sendOTPEmail = async (to, otp, purpose = "register") => {
   } else {
     subject = "FarmConnect OTP";
     text = `Your OTP: ${otp}\nIt will expire in ${
-      process.env.OTP_EXPIRES_IN || 5
+      process.env.OTP_EXPIRES_IN || 10
     } minutes.\n- FarmConnect Team`;
   }
 

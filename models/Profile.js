@@ -12,14 +12,24 @@ const profileSchema = new mongoose.Schema(
       enum: ["Farmer", "Customer"],
       required: true,
     },
+    firstName: { type: String },
+    lastName: { type: String },
+    email: { type: String },
     phone: { type: String },
     address: { type: String },
-    location: {
-      lat: { type: Number },
-      lng: { type: Number },
-    },
+    city: { type: String },
+    state: { type: String },
+    zip: { type: String },
+    farmName: { type: String },
+    landSize: { type: String },
+    farmType: { type: String },
+    experience: { type: String },
+    // Customer fields
+    businessName: { type: String },
+    businessType: { type: String },
+    orderVolume: { type: String },
     bio: { type: String },
-    avatar: { type: String }, // <-- Added avatar field
+    avatar: { type: String },
   },
   { timestamps: true }
 );

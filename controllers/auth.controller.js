@@ -17,87 +17,147 @@ module.exports = ({
     throw new Error("Invalid user role");
   };
 
-  // Registration, verification, login flows (updated for new fields)
+  const notificationService = require("../services/notification.service")();
   const register = async (req, res) => {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      address,
-      city,
-      state,
-      zip,
-      farmName,
-      farmSize,
-      farmType,
-      experience,
-      businessName,
-      businessType,
-      orderVolume,
-      role,
-    } = req.body;
-    const UserModel = getUserModel(role);
-    const existing = await UserModel.findOne({ email });
-    if (existing) return res.status(400).json({ message: "Email exists" });
-    const hashed = await hashPassword(password);
-    const { code, expiresAt } = generateOTP();
-    // Build user object based on role
-    let userObj = {
-      firstName,
-      lastName,
-      email,
-      password: hashed,
-      phone,
-      address,
-      city,
-      state,
-      zip,
-      otp: { code, expiresAt },
-      isVerified: false,
-    };
-    if (role === FARMER) {
-      userObj = {
-        ...userObj,
+    try {
+      const {
+        firstName,
+        lastName,
+        email,
+        password,
+        phone,
+        address,
+        city,
+        state,
+        zip,
         farmName,
         farmSize,
         farmType,
         experience,
-      };
-    } else if (role === CUSTOMER) {
-      userObj = {
-        ...userObj,
         businessName,
         businessType,
         orderVolume,
+        role,
+      } = req.body;
+      const UserModel = getUserModel(role);
+      const existing = await UserModel.findOne({ email });
+      if (existing) return res.status(400).json({ message: "Email exists" });
+      const hashed = await hashPassword(password);
+      const { code, expiresAt } = generateOTP();
+      let userObj = {
+        firstName,
+        lastName,
+        email,
+        password: hashed,
+        phone,
+        address,
+        city,
+        state,
+        zip,
+        role,
+        otp: { code, expiresAt },
+        isVerified: false,
       };
+      if (role === FARMER) {
+        console.log(userObj, "-----------------------------------");
+        userObj = {
+          ...userObj,
+          farmName,
+          farmSize,
+          farmType,
+          experience,
+        };
+      } else if (role === CUSTOMER) {
+        userObj = {
+          ...userObj,
+          businessName,
+          businessType,
+          orderVolume,
+        };
+      }
+      console.log(userObj, "**********");
+      const user = await UserModel.create(userObj);
+      await sendOTPEmail(email, code, "register");
+      // Send notification for registration
+      await notificationService.createNotification(
+        user._id,
+        role.charAt(0).toUpperCase() + role.slice(1),
+        "success",
+        "Registration successful! Please verify your email to activate your account.",
+        { email }
+      );
+      return res.status(201).json({
+        message: "OTP sent for verification",
+        role,
+        email: req.body.email,
+      });
+    } catch (err) {
+      // Duplicate email error from MongoDB
+      if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+      // Validation error
+      if (err.name === "ValidationError") {
+        return res
+          .status(400)
+          .json({ message: err.message, errors: err.errors });
+      }
+      // Other errors
+      return res
+        .status(500)
+        .json({ message: "Server error", error: err.message });
     }
-    const user = await UserModel.create(userObj);
-    await sendOTPEmail(email, code, "register");
-    return res.status(201).json({ message: "OTP sent for verification", role });
   };
 
   const verifyRegistration = async (req, res) => {
     const { email, otp, role } = req.body;
     const UserModel = getUserModel(role);
+    logger.info(
+      `[OTP VERIFY] Attempt for email: ${email}, role: ${role}, otp: ${otp}`
+    );
     const user = await UserModel.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (
-      !user.otp ||
-      user.otp.code !== otp ||
-      new Date(user.otp.expiresAt) < new Date()
-    ) {
+    if (!user) {
+      logger.warn(
+        `[OTP VERIFY] User not found for email: ${email}, role: ${role}`
+      );
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!user.otp) {
+      logger.warn(
+        `[OTP VERIFY] No OTP found for user: ${email}, role: ${role}`
+      );
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+    if (user.otp.code !== otp) {
+      logger.warn(
+        `[OTP VERIFY] OTP mismatch for user: ${email}, expected: ${user.otp.code}, got: ${otp}`
+      );
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+    if (new Date(user.otp.expiresAt) < new Date()) {
+      logger.warn(
+        `[OTP VERIFY] OTP expired for user: ${email}, expiredAt: ${user.otp.expiresAt}`
+      );
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
     user.isVerified = true;
     user.otp = undefined;
     await user.save();
+    logger.info(`[OTP VERIFY] Success for user: ${email}, role: ${role}`);
     const token = generateToken({ id: user._id, role });
+    // Send notification for OTP verification
+    await notificationService.createNotification(
+      user._id,
+      role.charAt(0).toUpperCase() + role.slice(1),
+      "success",
+      "Your account has been verified successfully!",
+      { email: user.email }
+    );
     return res.status(200).json({ message: "Verified", token });
   };
 
   const login = async (req, res) => {
+    console.log("enter into ---------------------");
     const { email, password, role } = req.body;
     const UserModel = getUserModel(role);
     const user = await UserModel.findOne({ email });
@@ -107,41 +167,71 @@ module.exports = ({
     if (!user.isVerified)
       return res.status(403).json({ message: "User not verified" });
     const token = generateToken({ id: user._id, role });
-    return res.status(200).json({ message: "Login successful", token });
+
+    console.log(user);
+    const userDetails = {
+      id: user._id,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+    };
+    // Send notification for login
+    const notifRole =
+      typeof user.role === "string" && user.role.length > 0
+        ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+        : "Farmer";
+    await notificationService.createNotification(
+      user._id,
+      notifRole,
+      "info",
+      "Login successful! Welcome back.",
+      { email: user.email }
+    );
+    return res
+      .status(200)
+      .json({ message: "Login successful", userDetails, token });
   };
 
   // === NEW: Forgot Password ===
   const forgotPassword = async (req, res) => {
-    const { email, role } = req.body;
-    if (!email || !role)
-      return res.status(400).json({ message: "Email and role are required" });
-
-    // get user by role
-    const user =
-      role === "farmer"
-        ? await Farmer.findOne({ email })
-        : await Customer.findOne({ email });
+    const { email, otp, role } = req.body;
+    const UserModel = getUserModel(role);
+    const user = await UserModel.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isVerified)
+      return res.status(400).json({ message: "User already verified" });
+    if (!user.otp || user.otp.code !== otp)
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    if (user.otp.expiresAt < Date.now())
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    user.isVerified = true;
+    user.otp = undefined;
+    await user.save();
+    const token = generateToken({ id: user._id, role });
+    // Only send OTP if user exists
     if (!user) {
-      // avoid revealing existence of account — respond success for security, but log
-      logger.warn(
-        "Password reset requested for non-existing user: %s (%s)",
-        email,
-        role
-      );
       return res.status(200).json({
         message: "If an account with this email exists, an OTP has been sent",
       });
     }
-
     // generate OTP and save
     const { code, expiresAt } = generateOTP();
     user.otp = { code, expiresAt };
     await user.save();
-
     // send OTP email
     await sendOTPEmail(email, code, "reset"); // purpose 'reset' handled in emailService text
     logger.info("Password reset OTP sent for %s (%s)", email, role);
-
+    // Optionally, send notification for password reset request
+    await notificationService.createNotification(
+      user._id,
+      role.charAt(0).toUpperCase() + role.slice(1),
+      "info",
+      "Password reset OTP sent.",
+      { email: user.email }
+    );
     return res.status(200).json({
       message: "If an account with this email exists, an OTP has been sent",
     });
@@ -211,3 +301,4 @@ module.exports = ({
     changePassword,
   };
 };
+module.exports = module.exports;

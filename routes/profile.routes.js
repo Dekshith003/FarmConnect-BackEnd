@@ -26,13 +26,11 @@ const router = express.Router();
 
 router.use(protect);
 
+// View own profile
 router.get("/", ctrl.getProfile);
-router.put("/", uploadAvatar.single("avatar"), ctrl.upsertProfile);
-router.delete("/", ctrl.deleteProfile);
-
-// New: Get profile by userId
+// Update own profile
+router.put("/", uploadAvatar.single("avatar"), ctrl.updateProfile);
+// View profile by userId
 router.get("/:userId", ctrl.getProfileById);
-// New: Fetch or create profile by userId
-router.post("/fetch-or-create/:userId", ctrl.fetchOrCreateProfile);
 
 module.exports = router;

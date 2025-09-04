@@ -52,7 +52,6 @@ module.exports = ({ cropService } = {}) => {
     try {
       let crops;
       if (req.user && req.user.id) {
-        console.log("Fetching crops for logged-in user-----------");
         // If logged in, show only this farmer's crops
         crops = await cropService.getMyCrops(req.user.id);
       } else {
@@ -65,21 +64,32 @@ module.exports = ({ cropService } = {}) => {
     }
   };
 
-  const markAsSold = async (req, res, next) => {
+  const toggleSoldStatus = async (req, res, next) => {
     try {
       const farmerId = req.user.id;
       const cropId = req.params.id;
-      const updated = await cropService.markCropSold(farmerId, cropId);
-      // Send notification to farmer
-      const notificationService = require("../services/notification.service")();
+      let updated = await cropService.toggleCropSold(farmerId, cropId);
+      // Populate farmer details in response
+      updated = await updated.populate(
+        "farmer",
+        "firstName lastName email phone address"
+      );
+
+      // Send notification
       await notificationService.createNotification(
         farmerId,
         req.user.role.charAt(0).toUpperCase() + req.user.role.slice(1),
         "info",
-        `Your crop '${updated.name}' was marked as sold!`,
+        `Your crop '${updated.name}' was ${
+          updated.isSold ? "marked as SOLD" : "unmarked (available)"
+        }!`,
         { crop: updated }
       );
-      return res.json({ message: "Marked as sold", crop: updated });
+
+      return res.json({
+        message: updated.isSold ? "Marked as sold" : "Unmarked as sold",
+        crop: updated,
+      });
     } catch (err) {
       next(err);
     }
@@ -133,7 +143,7 @@ module.exports = ({ cropService } = {}) => {
       const farmerId = req.params.farmerId; // <-- fix here
       console.log(farmerId, "Fetching crops for farmer ID");
       const crops = await cropService.getMyCrops(farmerId);
-      console.log(crops, "Fetched crops for farmer");
+      // console.log(crops, "Fetched crops for farmer");
       return res.json({ crops });
     } catch (err) {
       next(err);
@@ -143,7 +153,7 @@ module.exports = ({ cropService } = {}) => {
   return {
     create,
     myListings,
-    markAsSold,
+    toggleSoldStatus,
     remove,
     marketplace,
     getCropDetails,

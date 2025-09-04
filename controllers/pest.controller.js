@@ -3,6 +3,9 @@ module.exports = ({ pestService }) => {
   const detectPest = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ message: "Image is required" });
+    const imageUrl = req.file
+      ? `/uploads/pest-images/${req.file.filename}`
+      : "";
     const result = await pestService.detectPestOrDisease(req.file.path);
     await pestService.saveDetection({
       farmerId: req.user.id,
@@ -39,6 +42,7 @@ module.exports = ({ pestService }) => {
     try {
       const history = await pestService.getDetectionHistory(req.user.id);
       res.status(200).json(history);
+      console.log(history);
     } catch (err) {
       res
         .status(500)

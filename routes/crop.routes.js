@@ -41,7 +41,9 @@ router.post(
 router.get("/my-listings", ctrl.myListings);
 
 // Mark as sold
-router.patch("/mark-sold/:id", protect, allowRoles(FARMER), ctrl.markAsSold);
+// router.patch("/mark-sold/:id", protect, allowRoles(FARMER), ctrl.markAsSold);
+
+router.patch("/:id/sold", protect, allowRoles(FARMER), ctrl.toggleSoldStatus);
 
 // Delete crop
 router.delete("/:id", protect, allowRoles(FARMER), ctrl.remove);

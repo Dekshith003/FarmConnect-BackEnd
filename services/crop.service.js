@@ -19,17 +19,19 @@ module.exports = () => {
     );
   };
 
-  const markCropSold = async (farmerId, cropId) => {
-    const updated = await Crop.findOneAndUpdate(
-      { _id: cropId, farmer: farmerId },
-      { isSold: true },
-      { new: true }
-    );
-    if (!updated)
-      throw Object.assign(new Error("Crop not found or not owned by farmer"), {
-        statusCode: 404,
-      });
-    return updated;
+  const toggleCropSold = async (farmerId, cropId) => {
+    const crop = await Crop.findById(cropId);
+    if (!crop) {
+      throw new Error("Crop not found");
+    }
+
+    if (crop.farmer.toString() !== farmerId) {
+      throw new Error("Not authorized to update this crop");
+    }
+
+    crop.isSold = !crop.isSold; // ✅ toggle
+    await crop.save();
+    return crop;
   };
 
   const removeCrop = async (farmerId, cropId) => {
@@ -87,7 +89,7 @@ module.exports = () => {
   return {
     createCrop,
     getMyCrops,
-    markCropSold,
+    toggleCropSold,
     removeCrop,
     marketplaceSearch,
     getCropDetails,

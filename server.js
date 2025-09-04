@@ -36,6 +36,12 @@ app.use(
   "/uploads/pest-images",
   express.static(path.join(__dirname, "uploads/pest-images"))
 );
+
+app.use(
+  "/uploads/crop-images",
+  express.static(path.join(__dirname, "uploads/crop-images"))
+);
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve static files from the React frontend app

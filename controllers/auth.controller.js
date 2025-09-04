@@ -157,7 +157,6 @@ module.exports = ({
   };
 
   const login = async (req, res) => {
-    console.log("enter into ---------------------");
     const { email, password, role } = req.body;
     const UserModel = getUserModel(role);
     const user = await UserModel.findOne({ email });
@@ -168,7 +167,7 @@ module.exports = ({
       return res.status(403).json({ message: "User not verified" });
     const token = generateToken({ id: user._id, role });
 
-    console.log(user);
+    // console.log(user);
     const userDetails = {
       id: user._id,
       role: user.role,
@@ -197,44 +196,47 @@ module.exports = ({
 
   // === NEW: Forgot Password ===
   const forgotPassword = async (req, res) => {
-    const { email, otp, role } = req.body;
-    const UserModel = getUserModel(role);
-    const user = await UserModel.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.isVerified)
-      return res.status(400).json({ message: "User already verified" });
-    if (!user.otp || user.otp.code !== otp)
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    if (user.otp.expiresAt < Date.now())
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    user.isVerified = true;
-    user.otp = undefined;
-    await user.save();
-    const token = generateToken({ id: user._id, role });
-    // Only send OTP if user exists
-    if (!user) {
+    try {
+      const { email, role } = req.body;
+      const UserModel = getUserModel(role);
+
+      const user = await UserModel.findOne({ email });
+
+      // Always respond success (don't leak whether email exists)
+      if (!user) {
+        return res.status(200).json({
+          message: "If an account with this email exists, an OTP has been sent",
+        });
+      }
+
+      // Generate OTP for reset
+      const { code, expiresAt } = generateOTP();
+      user.otp = { code, expiresAt };
+      await user.save();
+
+      // Send OTP email
+      await sendOTPEmail(email, code, "reset");
+
+      logger.info("Password reset OTP sent for %s (%s)", email, role);
+
+      // Notification (optional)
+      await notificationService.createNotification(
+        user._id,
+        role.charAt(0).toUpperCase() + role.slice(1),
+        "info",
+        "Password reset OTP sent.",
+        { email: user.email }
+      );
+
       return res.status(200).json({
         message: "If an account with this email exists, an OTP has been sent",
       });
+    } catch (err) {
+      logger.error("Forgot password error: %s", err.message);
+      return res
+        .status(500)
+        .json({ message: "Server error", error: err.message });
     }
-    // generate OTP and save
-    const { code, expiresAt } = generateOTP();
-    user.otp = { code, expiresAt };
-    await user.save();
-    // send OTP email
-    await sendOTPEmail(email, code, "reset"); // purpose 'reset' handled in emailService text
-    logger.info("Password reset OTP sent for %s (%s)", email, role);
-    // Optionally, send notification for password reset request
-    await notificationService.createNotification(
-      user._id,
-      role.charAt(0).toUpperCase() + role.slice(1),
-      "info",
-      "Password reset OTP sent.",
-      { email: user.email }
-    );
-    return res.status(200).json({
-      message: "If an account with this email exists, an OTP has been sent",
-    });
   };
 
   // === NEW: Reset Password with OTP ===

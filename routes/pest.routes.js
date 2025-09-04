@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const upload = require("../middlewares/upload.middleware");
+const upload = require("../middlewares/upload.middleware"); // This should use pest-images
 const { protect, allowRoles } = require("../middlewares/auth.middleware");
 const { FARMER } = require("../constants/roles");
 const pestService = require("../services/pest.service")();
@@ -13,7 +13,7 @@ router.post(
   "/detect",
   protect,
   allowRoles(FARMER),
-  upload.single("image"),
+  upload.single("image"), // This should match the field name from frontend
   pestController.detectPest
 );
 

@@ -2,34 +2,36 @@ const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema(
   {
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "role",
       required: true,
+      ref: "User",
     },
     role: {
       type: String,
       enum: ["Farmer", "Customer"],
       required: true,
     },
-    firstName: { type: String },
-    lastName: { type: String },
-    email: { type: String },
-    phone: { type: String },
-    address: { type: String },
-    city: { type: String },
-    state: { type: String },
-    zip: { type: String },
-    farmName: { type: String },
-    landSize: { type: String },
-    farmType: { type: String },
-    experience: { type: String },
-    // Customer fields
-    businessName: { type: String },
-    businessType: { type: String },
-    orderVolume: { type: String },
-    bio: { type: String },
-    avatar: { type: String },
+    // Common fields
+    firstName: { type: String, default: "" },
+    lastName: { type: String, default: "" },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
+    zip: { type: String, default: "" },
+    avatar: { type: String, default: "" },
+    bio: { type: String, default: "" },
+    // Farmer-specific fields
+    farmName: { type: String, default: "" },
+    landSize: { type: String, default: "" },
+    farmType: { type: String, default: "" },
+    experience: { type: String, default: "" },
+    // Customer-specific fields
+    businessName: { type: String, default: "" },
+    businessType: { type: String, default: "" },
+    orderVolume: { type: String, default: "" },
   },
   { timestamps: true }
 );
